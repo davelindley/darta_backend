@@ -12,6 +12,7 @@ from pony.orm import Database, Required, Optional, PrimaryKey, Set, db_session
 
 db = Database()
 
+
 class Player(db.Entity):
     id = PrimaryKey(int, auto=True)
     name = Required(str)
@@ -43,8 +44,10 @@ class Dart(db.Entity):
 
 db.bind(provider='sqlite', filename='database.sqlite', create_db=True)
 
-db.generate_mapping(create_tables=False)
-
+try:
+    db.generate_mapping(create_tables=True)
+except:
+    db.generate_mapping(create_tables=False)
 
 app = FastAPI()
 
@@ -53,12 +56,14 @@ origins = [
     ]
 
 app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_origins=origins,
-)
+        CORSMiddleware,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_origins=origins,
+        )
+
+
 # Endpoints
 
 # @app.get("/")
@@ -69,9 +74,10 @@ app.add_middleware(
 # Create a Player
 @app.post("/player")
 @db_session
-def create_player(request:dict):
+def create_player(request: dict):
     player = Player(name=request['name'])
     return player.to_dict()
+
 
 # Get all players
 @app.get("/players")
@@ -79,6 +85,7 @@ def create_player(request:dict):
 def get_players():
     players = [player.to_dict() for player in Player.select()]
     return players
+
 
 # Create a Game
 @app.post("/game")
@@ -90,12 +97,15 @@ def create_game(request: dict):
     game_id = game.id
     return Game[game_id].to_dict()
 
+
 # Throw a dart
 @app.post("/dart")
 @db_session
 def throw_dart(request: dict):
-    dart = Dart(player=Player[request['player_id']], game=Game[request['game_id']], score=request['score'], multiplier=request['multiplier'])
+    dart = Dart(player=Player[request['player_id']], game=Game[request['game_id']], score=request['score'],
+                multiplier=request['multiplier'])
     return dart.to_dict()
+
 
 # Get all darts by game
 @app.get("/dart/{game_id}")
@@ -103,6 +113,7 @@ def throw_dart(request: dict):
 def get_darts(game_id: int):
     darts = [dart.to_dict() for dart in Dart.select(lambda d: d.game.id == game_id)]
     return darts
+
 
 # Start a Game
 
